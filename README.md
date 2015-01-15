@@ -2,6 +2,15 @@
 
 the ember reduced-computed and array-computed as addon
 
+##Addon Install
+`ember install:addon patricklx/ember-cli-reduce-computed`
+
+then in your app:
+
+`import install from 'ember-cli-reduce-computed';`
+`install()`
+
+
 ## API difference
 - new callback: `propertyChanged`
 - item property changes are coalesced and applied asynchronously with `run.once`. 

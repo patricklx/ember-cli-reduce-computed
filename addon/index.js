@@ -7,6 +7,11 @@ var install = function () {
   Ember.arrayComputed = arrayComputed;
 };
 
+
+if (Ember.libraries) {
+  Ember.libraries.register('ember-cli-reduce-computed', '0.1.0');
+}
+
 export {
   reduceComputed,
   arrayComputed,
