@@ -154,7 +154,7 @@ function ReduceComputedProperty(options) {
     addItems.call(this, propertyName, firstSetup);
   };
 
-  this.func = function (propertyName) {
+  this._getter = function (propertyName) {
     Ember.assert('Computed reduce values require at least one dependent key', cp._dependentKeys);
     if (!cp._hasInstanceMeta(this, propertyName)) {
       // When we recompute an array computed property, we need already
