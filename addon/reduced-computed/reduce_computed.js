@@ -80,7 +80,6 @@ function ReduceComputedProperty(options) {
   this._previousItemPropertyKeys = {};
 
   this.readOnly();
-  this.cacheable();
 
   this._update = null;
 
