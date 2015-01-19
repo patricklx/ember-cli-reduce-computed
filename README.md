@@ -5,6 +5,10 @@ the ember reduced-computed and array-computed as addon
 ##Addon Install
 `ember install:addon patricklx/ember-cli-reduce-computed`
 
+however the computed.* functions will still use the old implementation, 
+therefore you also need to install the addon [ember-cli-reduce-computed-macros](https://github.com/patricklx/ember-cli-reduce-computed-macros)
+
+
 then in your app:
 
 `import install from 'ember-cli-reduce-computed';`
