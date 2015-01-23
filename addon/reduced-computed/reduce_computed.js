@@ -81,8 +81,6 @@ function ReduceComputedProperty(options) {
 
   this.readOnly();
 
-  this._update = null;
-
   this.recomputeOnce = function(propertyName) {
     // What we really want to do is coalesce by <cp, propertyName>.
     // We need a form of `scheduleOnce` that accepts an arbitrary token to

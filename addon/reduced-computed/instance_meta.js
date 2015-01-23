@@ -19,6 +19,13 @@ ReduceComputedPropertyInstanceMeta.prototype = {
     return this.value === undefined;
   },
 
+  forceFlush: function () {
+    if (this.dependentArraysObserver.update) {
+      run.cancel(this.dependentArraysObserver.update);
+      this.dependentArraysObserver._flushChanges();
+    }
+  },
+
   notifyPropertyChangeIfRequired: function () {
     var didChange = this.valueChanged;
     if (didChange){
@@ -29,10 +36,9 @@ ReduceComputedPropertyInstanceMeta.prototype = {
   },
 
   getValue: function () {
-    if (this.dependentArraysObserver.update) {
-      run.cancel(this.dependentArraysObserver.update);
-      this.dependentArraysObserver._flushChanges();
-    }
+
+    this.forceFlush();
+
     var value = this.value;
 
     if (value !== undefined) {
