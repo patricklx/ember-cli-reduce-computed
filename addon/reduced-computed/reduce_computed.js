@@ -35,6 +35,7 @@ function get(obj, key) {
 
 function reset(cp, propertyName) {
   var meta = cp._instanceMeta(this, propertyName);
+  meta.forceFlush();
   meta.setValue(
     cp.initialValue(this, meta)
   );
