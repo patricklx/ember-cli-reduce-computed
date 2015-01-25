@@ -300,7 +300,7 @@ DependentArraysObserver.prototype = {
         obj: obj
       };
     }
-    this.update = run.once(this, this._flushChanges);
+    this.instanceMeta.update = run.once(this, this._flushChanges);
   },
 
   _flushChanges: function () {
@@ -308,7 +308,7 @@ DependentArraysObserver.prototype = {
     var key, c, changeMeta = {};
     var callback;
 
-    this.update = null;
+    this.instanceMeta.update = null;
 
     if(this.callbacks.propertyChanged){
       callback = function(){

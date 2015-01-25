@@ -9,19 +9,20 @@ function ReduceComputedPropertyInstanceMeta(context, propertyName) {
   this.dependentArrays = {};
   this.sugarMeta = {};
   this.initialValue = undefined;
+  this.value = undefined;
+  this.valueChanged = false;
+  this.update = null;
 }
 
 ReduceComputedPropertyInstanceMeta.prototype = {
-  value: undefined,
-  valueChanged: false,
 
   shouldRecompute: function () {
     return this.value === undefined;
   },
 
   forceFlush: function () {
-    if (this.dependentArraysObserver.update) {
-      run.cancel(this.dependentArraysObserver.update);
+    if (this.update) {
+      run.cancel(this.update);
       this.dependentArraysObserver._flushChanges();
     }
   },
