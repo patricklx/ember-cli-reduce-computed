@@ -1,9 +1,9 @@
 {
   "name": "ember-cli-reduce-computed",
   "dependencies": {
-    "handlebars": "~1.3.0",
+    "handlebars": "~2.0.0",
     "jquery": "^1.11.1",
-    "ember": "1.10.0-beta.4",
+    "ember": ".11.0-beta.1+canary.4c547e32",
     "ember-data": "1.0.0-beta.12",
     "ember-resolver": "~0.1.10",
     "loader.js": "stefanpenner/loader.js#1.0.1",

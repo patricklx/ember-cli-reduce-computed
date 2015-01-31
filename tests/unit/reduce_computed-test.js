@@ -570,23 +570,16 @@ test("recomputations from `arrayComputed` observers add back dependent keys", fu
 
   deepEqual(titles, ["Kingsguard", "Queen"], "precond - value is correct");
 
-  ok(meta.deps.people !== undefined, "people has dependencies");
-  deepEqual(keys(meta.deps.people), ["titles"], "only titles depends on people");
-  equal(meta.deps.people.titles, 1, "titles depends on people exactly once");
-  equal(meta.watching.people, 2, "people has two watchers: the array listener and titles");
+  equal(meta.watching.people, 1, "people has one watchers: the array listener");
 
   run(function() {
     set(obj, 'people', Ember.A());
   });
 
-  // Regular CPs are invalidated when their dependent keys change, but array
-  // computeds keep refs up to date
+  // Regular CPs are invalidated when their dependent keys change
   deepEqual(titles, [], "value is correct");
-  equal(meta.cache.titles, titles, "value remains cached");
-  ok(meta.deps.people !== undefined, "people has dependencies");
-  deepEqual(keys(meta.deps.people), ["titles"], "meta.deps.people is unchanged");
-  equal(meta.deps.people.titles, 1, "deps.people.titles is unchanged");
-  equal(meta.watching.people, 2, "watching.people is unchanged");
+  equal(meta.cache.titles, undefined, "value removed from cache");
+  equal(meta.watching.people, 1, "watching.people is unchanged");
 });
 
 QUnit.module('Ember.arryComputed - self chains', {

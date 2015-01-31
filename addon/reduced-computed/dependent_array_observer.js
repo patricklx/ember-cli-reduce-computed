@@ -64,6 +64,8 @@ function DependentArraysObserver(callbacks, cp, instanceMeta, context, propertyN
   this.changedItems = {};
 
   this.observersContextByGuid = {};
+  this.observersReIndexByGuid = {};
+
 }
 
 DependentArraysObserver.prototype = {
@@ -219,7 +221,7 @@ DependentArraysObserver.prototype = {
 
       item = dependentArray.objectAt(itemIndex);
 
-      if(observerContexts && observerContexts.length){
+      if (observerContexts && observerContexts.length) {
         forEach(itemPropertyKeys, removeObservers, this);
       }
 
@@ -228,10 +230,10 @@ DependentArraysObserver.prototype = {
         this.instanceMeta.context, this.getValue(), item, changeMeta, this.instanceMeta.sugarMeta));
     }
 
-    if( observerContexts && this.needIndex && index <= observerContexts.length-1 ){
+    if (observerContexts && this.needIndex && index <= observerContexts.length-1) {
       observerContexts.splice(index, removedCount);
-      for(itemIndex = index; itemIndex < observerContexts.length; itemIndex++){
-        observerContexts[itemIndex].index = itemIndex;
+      if (this.observersReIndexByGuid[guid] === undefined || index < this.observersReIndexByGuid[guid]) {
+        this.observersReIndexByGuid[guid] = index;
       }
     }
   },
@@ -279,8 +281,8 @@ DependentArraysObserver.prototype = {
     }
     if( observerContextsToAdd.length && this.needIndex){
       Array.prototype.splice.apply(observerContexts, [index, 0].concat(observerContextsToAdd));
-      for(itemIndex = index+addedCount; itemIndex < observerContexts.length; itemIndex++){
-        observerContexts[itemIndex].index = itemIndex;
+      if (this.observersReIndexByGuid[guid] === undefined || index < this.observersReIndexByGuid[guid]) {
+        this.observersReIndexByGuid[guid] = index;
       }
     }
 
@@ -301,6 +303,20 @@ DependentArraysObserver.prototype = {
       };
     }
     this.instanceMeta.update = run.once(this, this._flushChanges);
+  },
+
+  _updateIndexes: function (array) {
+    var itemIndex, observerContexts, guid;
+    guid = guidFor(array);
+    //updateIndexes
+    if (this.needIndex && this.observersReIndexByGuid[guid] !== undefined) {
+      observerContexts = this.observersContextByGuid[guid];
+      var reIndexStart = this.observersReIndexByGuid[guid];
+      for(itemIndex = reIndexStart; itemIndex < observerContexts.length; itemIndex++){
+        observerContexts[itemIndex].index = itemIndex;
+      }
+      delete this.observersReIndexByGuid[guid];
+    }
   },
 
   _flushChanges: function () {
@@ -326,6 +342,7 @@ DependentArraysObserver.prototype = {
 
     for (key in changedItems) {
       c = changedItems[key];
+      this._updateIndexes(c.array);
 
       ChangeMeta.call(changeMeta, c.array, c.obj, c.observerContext.index, this.instanceMeta.propertyName, this.cp, changedItems.length);
       callback.call(this);
