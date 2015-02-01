@@ -212,6 +212,7 @@ DependentArraysObserver.prototype = {
         if (g in this.changedItems){
           delete this.changedItems[g];
         }
+        observerContexts[itemIndex].deleted = true;
         removeObserver(item, propertyKey, this, observerContexts[itemIndex].observer);
       }
     }
@@ -281,8 +282,8 @@ DependentArraysObserver.prototype = {
     }
     if( observerContextsToAdd.length && this.needIndex){
       Array.prototype.splice.apply(observerContexts, [index, 0].concat(observerContextsToAdd));
-      if (this.observersReIndexByGuid[guid] === undefined || index < this.observersReIndexByGuid[guid]) {
-        this.observersReIndexByGuid[guid] = index;
+      if (this.observersReIndexByGuid[guid] === undefined || maxIndex < this.observersReIndexByGuid[guid]) {
+        this.observersReIndexByGuid[guid] = maxIndex;
       }
     }
 
@@ -293,6 +294,7 @@ DependentArraysObserver.prototype = {
   },
 
   itemPropertyDidChange: function (obj, keyName, array, observerContext) {
+    if (observerContext.deleted) return;
     var guid = guidFor(obj);
     cacheRemove(this.cache, this.propertyName);
     if (!this.changedItems[guid]) {
