@@ -12,6 +12,10 @@ function ReduceComputedPropertyInstanceMeta(context, propertyName) {
   this.value = undefined;
   this.valueChanged = false;
   this.update = null;
+  var contextMeta = metaFor(context);
+  var contextCache = contextMeta.cache;
+  if (!contextCache) { contextCache = contextMeta.cache = {}; }
+  this.cache = contextCache;
 }
 
 ReduceComputedPropertyInstanceMeta.prototype = {

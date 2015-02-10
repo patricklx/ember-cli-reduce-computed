@@ -196,12 +196,19 @@ ReduceComputedProperty.prototype._callbacks = function () {
 };
 
 ReduceComputedProperty.prototype._hasInstanceMeta = function (context, propertyName) {
-  return !!metaFor(context).cacheMeta[propertyName];
+  var contextMeta = context.__ember_meta__;
+  var cacheMeta = contextMeta && contextMeta.cacheMeta;
+  return !!(cacheMeta && cacheMeta[propertyName]);
 };
 
 ReduceComputedProperty.prototype._instanceMeta = function (context, propertyName) {
-  var cacheMeta = metaFor(context).cacheMeta;
-  var meta = cacheMeta[propertyName];
+  var contextMeta = context.__ember_meta__;
+  var cacheMeta = contextMeta.cacheMeta;
+  var meta = cacheMeta && cacheMeta[propertyName];
+
+  if (!cacheMeta) {
+    cacheMeta = contextMeta.cacheMeta = {};
+  }
 
   if (!meta) {
     meta = cacheMeta[propertyName] = new ReduceComputedPropertyInstanceMeta(context, propertyName);
