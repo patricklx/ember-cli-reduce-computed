@@ -172,6 +172,8 @@ function ReduceComputedProperty(options) {
     }
     return cp._instanceMeta(this, propertyName).getValue();
  };
+ //maintain backwards compatibility
+ this.func = this._getter;
 }
 
 ReduceComputedProperty.prototype = o_create(ComputedProperty.prototype);
