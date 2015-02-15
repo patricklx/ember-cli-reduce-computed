@@ -2,6 +2,7 @@ import Ember from 'ember';
 var propertyWillChange = Ember.propertyWillChange;
 var propertyDidChange = Ember.propertyDidChange;
 var run = Ember.run;
+var metaFor = Ember.meta;
 
 function ReduceComputedPropertyInstanceMeta(context, propertyName) {
   this.context = context;
