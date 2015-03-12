@@ -59,14 +59,14 @@ function partiallyRecomputeFor(obj, dependentKey) {
 
 
 /**
-  A computed property whose dependent keys are arrays and which is updated with
-  "one at a time" semantics.
+ A computed property whose dependent keys are arrays and which is updated with
+ "one at a time" semantics.
 
-  @class ReduceComputedProperty
-  @namespace Ember
-  @extends Ember.ComputedProperty
-  @constructor
-*/
+ @class ReduceComputedProperty
+ @namespace Ember
+ @extends Ember.ComputedProperty
+ @constructor
+ */
 
 export { ReduceComputedProperty }; // TODO: default export
 
@@ -74,7 +74,7 @@ function ReduceComputedProperty(options) {
   var cp = this;
 
   this.options = options;
-  this._dependentKeys = null;
+  this._dependentArrays = null;
   // A map of dependentKey -> [itemProperty, ...] that tracks what properties of
   // items in the array we must track to update this property.
   this._itemPropertyKeys = {};
@@ -86,14 +86,17 @@ function ReduceComputedProperty(options) {
     // What we really want to do is coalesce by <cp, propertyName>.
     // We need a form of `scheduleOnce` that accepts an arbitrary token to
     // coalesce by, in addition to the target and method.
-    run.once(this, setup, propertyName);
+    run.once(this, setup, propertyName, false, cp);
   };
 
-  var addItems = function (propertyName, firstSetup) {
+  var addItems = function (propertyName, firstSetup, _cp) {
+    if (_cp) {
+      cp = _cp;
+    }
     var meta = cp._instanceMeta(this, propertyName);
     var callbacks = cp._callbacks();
     if(!cp.options.hasOwnInitialValue){
-      forEach(cp._dependentKeys, function(dependentKey) {
+      forEach(cp._dependentArrays, function(dependentKey) {
         if (!partiallyRecomputeFor(this, dependentKey)) { return; }
 
         var dependentArray = get(this, dependentKey);
@@ -116,7 +119,7 @@ function ReduceComputedProperty(options) {
     reset.call(this, cp, propertyName);
 
     meta.dependentArraysObserver.suspendArrayObservers(function () {
-      forEach(cp._dependentKeys, function (dependentKey) {
+      forEach(cp._dependentArrays, function (dependentKey) {
         Ember.assert(
           'dependent array ' + dependentKey + ' must be an `Ember.Array`.  ' +
           'If you are not extending arrays, you will need to wrap native arrays with `Ember.A`',
@@ -153,12 +156,17 @@ function ReduceComputedProperty(options) {
   };
 
   this._getter = function (propertyName) {
-    Ember.assert('Computed reduce values require at least one dependent key', cp._dependentKeys);
+    Ember.assert('Computed reduce values require at least one dependent key', cp._dependentArrays);
     if (!cp._hasInstanceMeta(this, propertyName)) {
       // When we recompute an array computed property, we need already
       // retrieved arrays to be updated; we can't simply empty the cache and
       // hope the array is re-retrieved.
       setup.call(this, propertyName, true);
+      forEach(cp._dependentArrays, function(dependentKey) {
+        addObserver(this, dependentKey, function() {
+          cp.recomputeOnce.call(this, propertyName);
+        });
+      }, this);
       forEach(cp._dependentKeys, function(dependentKey) {
         addObserver(this, dependentKey, function() {
           cp.recomputeOnce.call(this, propertyName);
@@ -171,9 +179,9 @@ function ReduceComputedProperty(options) {
       }
     }
     return cp._instanceMeta(this, propertyName).getValue();
- };
- //maintain backwards compatibility
- this.func = this._getter;
+  };
+  //maintain backwards compatibility
+  this.func = this._getter;
 }
 
 ReduceComputedProperty.prototype = o_create(ComputedProperty.prototype);
@@ -245,7 +253,7 @@ ReduceComputedProperty.prototype.property = function () {
   var cp = this;
   var args = a_slice.call(arguments);
   var propertyArgs = {};
-  var match, dependentArrayKey;
+  var match, dependentArrayKey, ret;
 
   forEach(args, function (dependentKey) {
     if (doubleEachPropertyPattern.test(dependentKey)) {
@@ -270,101 +278,108 @@ ReduceComputedProperty.prototype.property = function () {
     propertyArgsToArray.push(propertyArgs[guid]);
   }
 
-  return ComputedProperty.prototype.property.apply(this, propertyArgsToArray);
+  if (this._dependentArrays) {
+    return this;
+  }
+
+  ret = ComputedProperty.prototype.property.apply(this, propertyArgsToArray);
+  cp._dependentArrays = cp._dependentKeys;
+  cp._dependentKeys = [];
+  return ret;
 };
 
 /**
-  Creates a computed property which operates on dependent arrays and
-  is updated with "one at a time" semantics. When items are added or
-  removed from the dependent array(s) a reduce computed only operates
-  on the change instead of re-evaluating the entire array.
+ Creates a computed property which operates on dependent arrays and
+ is updated with "one at a time" semantics. When items are added or
+ removed from the dependent array(s) a reduce computed only operates
+ on the change instead of re-evaluating the entire array.
 
-  If there are more than one arguments the first arguments are
-  considered to be dependent property keys. The last argument is
-  required to be an options object. The options object can have the
-  following four properties:
+ If there are more than one arguments the first arguments are
+ considered to be dependent property keys. The last argument is
+ required to be an options object. The options object can have the
+ following four properties:
 
-  `initialValue` - A value or function that will be used as the initial
-  value for the computed. If this property is a function the result of calling
-  the function will be used as the initial value. This property is required.
+ `initialValue` - A value or function that will be used as the initial
+ value for the computed. If this property is a function the result of calling
+ the function will be used as the initial value. This property is required.
 
-  `initialize` - An optional initialize function. Typically this will be used
-  to set up state on the instanceMeta object.
+ `initialize` - An optional initialize function. Typically this will be used
+ to set up state on the instanceMeta object.
 
-  `removedItem` - A function that is called each time an element is removed
-  from the array.
+ `removedItem` - A function that is called each time an element is removed
+ from the array.
 
-  `addedItem` - A function that is called each time an element is added to
-  the array.
-
-
-  The `initialize` function has the following signature:
-
-  ```javascript
-  function(initialValue, changeMeta, instanceMeta)
-  ```
-
-  `initialValue` - The value of the `initialValue` property from the
-  options object.
-
-  `changeMeta` - An object which contains meta information about the
-  computed. It contains the following properties:
-
-     - `property` the computed property
-     - `propertyName` the name of the property on the object
-
-  `instanceMeta` - An object that can be used to store meta
-  information needed for calculating your computed. For example a
-  unique computed might use this to store the number of times a given
-  element is found in the dependent array.
+ `addedItem` - A function that is called each time an element is added to
+ the array.
 
 
-  The `removedItem` and `addedItem` functions both have the following signature:
+ The `initialize` function has the following signature:
 
-  ```javascript
-  function(accumulatedValue, item, changeMeta, instanceMeta)
-  ```
+ ```javascript
+ function(initialValue, changeMeta, instanceMeta)
+ ```
 
-  `accumulatedValue` - The value returned from the last time
-  `removedItem` or `addedItem` was called or `initialValue`.
+ `initialValue` - The value of the `initialValue` property from the
+ options object.
 
-  `item` - the element added or removed from the array
+ `changeMeta` - An object which contains meta information about the
+ computed. It contains the following properties:
 
-  `changeMeta` - An object which contains meta information about the
-  change. It contains the following properties:
+ - `property` the computed property
+ - `propertyName` the name of the property on the object
 
-    - `property` the computed property
-    - `propertyName` the name of the property on the object
-    - `index` the index of the added or removed item
-    - `item` the added or removed item: this is exactly the same as
-      the second arg
-    - `arrayChanged` the array that triggered the change. Can be
-      useful when depending on multiple arrays.
+ `instanceMeta` - An object that can be used to store meta
+ information needed for calculating your computed. For example a
+ unique computed might use this to store the number of times a given
+ element is found in the dependent array.
 
-  For property changes triggered on an item property change (when
-  depKey is something like `someArray.@each.someProperty`),
-  `changeMeta` will also contain the following property:
 
-  `instanceMeta` - An object that can be used to store meta
-  information needed for calculating your computed. For example a
-  unique computed might use this to store the number of times a given
-  element is found in the dependent array.
+ The `removedItem` and `addedItem` functions both have the following signature:
 
-  The `removedItem` and `addedItem` functions should return the accumulated
-  value. It is acceptable to not return anything (ie return undefined)
-  to invalidate the computation. This is generally not a good idea for
-  arrayComputed but it's used in eg max and min.
+ ```javascript
+ function(accumulatedValue, item, changeMeta, instanceMeta)
+ ```
 
-  Note that observers will be fired if either of these functions return a value
-  that differs from the accumulated value.  When returning an object that
-  mutates in response to array changes, for example an array that maps
-  everything from some other array (see `Ember.computed.map`), it is usually
-  important that the *same* array be returned to avoid accidentally triggering observers.
+ `accumulatedValue` - The value returned from the last time
+ `removedItem` or `addedItem` was called or `initialValue`.
 
-  Example
+ `item` - the element added or removed from the array
 
-  ```javascript
-  Ember.computed.max = function(dependentKey) {
+ `changeMeta` - An object which contains meta information about the
+ change. It contains the following properties:
+
+ - `property` the computed property
+ - `propertyName` the name of the property on the object
+ - `index` the index of the added or removed item
+ - `item` the added or removed item: this is exactly the same as
+ the second arg
+ - `arrayChanged` the array that triggered the change. Can be
+ useful when depending on multiple arrays.
+
+ For property changes triggered on an item property change (when
+ depKey is something like `someArray.@each.someProperty`),
+ `changeMeta` will also contain the following property:
+
+ `instanceMeta` - An object that can be used to store meta
+ information needed for calculating your computed. For example a
+ unique computed might use this to store the number of times a given
+ element is found in the dependent array.
+
+ The `removedItem` and `addedItem` functions should return the accumulated
+ value. It is acceptable to not return anything (ie return undefined)
+ to invalidate the computation. This is generally not a good idea for
+ arrayComputed but it's used in eg max and min.
+
+ Note that observers will be fired if either of these functions return a value
+ that differs from the accumulated value.  When returning an object that
+ mutates in response to array changes, for example an array that maps
+ everything from some other array (see `Ember.computed.map`), it is usually
+ important that the *same* array be returned to avoid accidentally triggering observers.
+
+ Example
+
+ ```javascript
+ Ember.computed.max = function(dependentKey) {
     return Ember.reduceComputed(dependentKey, {
       initialValue: -Infinity,
 
@@ -379,54 +394,54 @@ ReduceComputedProperty.prototype.property = function () {
       }
     });
   };
-  ```
+ ```
 
-  Dependent keys may refer to `@this` to observe changes to the object itself,
-  which must be array-like, rather than a property of the object.  This is
-  mostly useful for array proxies, to ensure objects are retrieved via
-  `objectAtContent`.  This is how you could sort items by properties defined on an item controller.
+ Dependent keys may refer to `@this` to observe changes to the object itself,
+ which must be array-like, rather than a property of the object.  This is
+ mostly useful for array proxies, to ensure objects are retrieved via
+ `objectAtContent`.  This is how you could sort items by properties defined on an item controller.
 
-  Example
+ Example
 
-  ```javascript
-  App.PeopleController = Ember.ArrayController.extend({
+ ```javascript
+ App.PeopleController = Ember.ArrayController.extend({
     itemController: 'person',
 
     sortedPeople: Ember.computed.sort('@this.@each.reversedName', function(personA, personB) {
       // `reversedName` isn't defined on Person, but we have access to it via
       // the item controller App.PersonController.  If we'd used
       // `content.@each.reversedName` above, we would be getting the objects
-      // directly and not have access to `reversedName`.
-      //
-      var reversedNameA = get(personA, 'reversedName');
-      var reversedNameB = get(personB, 'reversedName');
+ // directly and not have access to `reversedName`.
+ //
+ var reversedNameA = get(personA, 'reversedName');
+ var reversedNameB = get(personB, 'reversedName');
 
-      return Ember.compare(reversedNameA, reversedNameB);
-    })
-  });
+ return Ember.compare(reversedNameA, reversedNameB);
+ })
+ });
 
-  App.PersonController = Ember.ObjectController.extend({
+ App.PersonController = Ember.ObjectController.extend({
     reversedName: function() {
       return reverse(get(this, 'name'));
     }.property('name')
   });
-  ```
+ ```
 
-  Dependent keys whose values are not arrays are treated as regular
-  dependencies: when they change, the computed property is completely
-  recalculated.  It is sometimes useful to have dependent arrays with similar
-  semantics.  Dependent keys which end in `.[]` do not use "one at a time"
-  semantics.  When an item is added or removed from such a dependency, the
-  computed property is completely recomputed.
+ Dependent keys whose values are not arrays are treated as regular
+ dependencies: when they change, the computed property is completely
+ recalculated.  It is sometimes useful to have dependent arrays with similar
+ semantics.  Dependent keys which end in `.[]` do not use "one at a time"
+ semantics.  When an item is added or removed from such a dependency, the
+ computed property is completely recomputed.
 
-  When the computed property is completely recomputed, the `accumulatedValue`
-  is discarded, it starts with `initialValue` again, and each item is passed
-  to `addedItem` in turn.
+ When the computed property is completely recomputed, the `accumulatedValue`
+ is discarded, it starts with `initialValue` again, and each item is passed
+ to `addedItem` in turn.
 
-  Example
+ Example
 
-  ```javascript
-  Ember.Object.extend({
+ ```javascript
+ Ember.Object.extend({
     // When `string` is changed, `computed` is completely recomputed.
     string: 'a string',
 
@@ -442,14 +457,14 @@ ReduceComputedProperty.prototype.property = function () {
       removedItem: removedItemCallback
     })
   });
-  ```
+ ```
 
-  @method reduceComputed
-  @for Ember
-  @param {String} [dependentKeys*]
-  @param {Object} options
-  @return {Ember.ComputedProperty}
-*/
+ @method reduceComputed
+ @for Ember
+ @param {String} [dependentKeys*]
+ @param {Object} options
+ @return {Ember.ComputedProperty}
+ */
 export function reduceComputed(options) {
   var args;
 
