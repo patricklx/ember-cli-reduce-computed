@@ -89,10 +89,7 @@ function ReduceComputedProperty(options) {
     run.once(this, setup, propertyName, false, cp);
   };
 
-  var addItems = function (propertyName, firstSetup, _cp) {
-    if (_cp) {
-      cp = _cp;
-    }
+  var addItems = function (propertyName, firstSetup) {
     var meta = cp._instanceMeta(this, propertyName);
     var callbacks = cp._callbacks();
     if(!cp.options.hasOwnInitialValue){
@@ -113,7 +110,10 @@ function ReduceComputedProperty(options) {
     }
   };
 
-  var setup = function (propertyName, firstSetup) {
+  var setup = function (propertyName, firstSetup, _cp) {
+    if (_cp) {
+      cp = _cp;
+    }
     var meta = cp._instanceMeta(this, propertyName);
 
     reset.call(this, cp, propertyName);
