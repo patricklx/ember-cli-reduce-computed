@@ -82,14 +82,14 @@ function ReduceComputedProperty(options) {
 
   this.readOnly();
 
-  this.recomputeOnce = function(propertyName) {
+  this.recomputeOnce = function(propertyName, cp) {
     // What we really want to do is coalesce by <cp, propertyName>.
     // We need a form of `scheduleOnce` that accepts an arbitrary token to
     // coalesce by, in addition to the target and method.
     run.once(this, setup, propertyName, false, cp);
   };
 
-  var addItems = function (propertyName, firstSetup) {
+  var addItems = function (propertyName, firstSetup, cp) {
     var meta = cp._instanceMeta(this, propertyName);
     var callbacks = cp._callbacks();
     if(!cp.options.hasOwnInitialValue){
@@ -110,10 +110,8 @@ function ReduceComputedProperty(options) {
     }
   };
 
-  var setup = function (propertyName, firstSetup, _cp) {
-    if (_cp) {
-      cp = _cp;
-    }
+  var setup = function (propertyName, firstSetup, cp) {
+
     var meta = cp._instanceMeta(this, propertyName);
 
     reset.call(this, cp, propertyName);
@@ -152,7 +150,7 @@ function ReduceComputedProperty(options) {
         }
       }, this);
     }, this);
-    addItems.call(this, propertyName, firstSetup);
+    addItems.call(this, propertyName, firstSetup, cp)
   };
 
   this._getter = function (propertyName) {
@@ -161,21 +159,24 @@ function ReduceComputedProperty(options) {
       // When we recompute an array computed property, we need already
       // retrieved arrays to be updated; we can't simply empty the cache and
       // hope the array is re-retrieved.
-      setup.call(this, propertyName, true);
+
+      var recompute = function(_this, propertyName, _cp){
+        return function(){
+          cp.recomputeOnce.call(_this, propertyName, _cp);
+        };
+      };
+
+      setup.call(this, propertyName, true, cp);
       forEach(cp._dependentArrays, function(dependentKey) {
-        addObserver(this, dependentKey, function() {
-          cp.recomputeOnce.call(this, propertyName);
-        });
+        addObserver(this, dependentKey, recompute(this, propertyName, cp));
       }, this);
       forEach(cp._dependentKeys, function(dependentKey) {
-        addObserver(this, dependentKey, function() {
-          cp.recomputeOnce.call(this, propertyName);
-        });
+        addObserver(this, dependentKey, recompute(this, propertyName, cp));
       }, this);
     }else{
       if(cp._instanceMeta(this, propertyName).shouldRecompute()){
         reset.call(this, cp, propertyName);
-        addItems.call(this, propertyName, true);
+        addItems.call(this, propertyName, true, cp);
       }
     }
     return cp._instanceMeta(this, propertyName).getValue();
