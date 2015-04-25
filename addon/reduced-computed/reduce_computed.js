@@ -80,12 +80,11 @@ function ReduceComputedProperty(options) {
   this._itemPropertyKeys = {};
   this._previousItemPropertyKeys = {};
 
-  this.readOnly();
+  this.instanceMeta = {};
+
+  //this.readOnly();
 
   this.recomputeOnce = function(propertyName, cp) {
-    // What we really want to do is coalesce by <cp, propertyName>.
-    // We need a form of `scheduleOnce` that accepts an arbitrary token to
-    // coalesce by, in addition to the target and method.
     run.once(this, setup, propertyName, false, cp);
   };
 
@@ -153,36 +152,37 @@ function ReduceComputedProperty(options) {
     addItems.call(this, propertyName, firstSetup, cp)
   };
 
-  var _cp = this;
-  this._getter = function (propertyName) {
+  var _getter = function (_cp) {
+    return function (propertyName) {
+      Ember.assert('Computed reduce values require at least one dependent key', _cp._dependentArrays);
+      if (!_cp._hasInstanceMeta(this, propertyName)) {
+        // When we recompute an array computed property, we need already
+        // retrieved arrays to be updated; we can't simply empty the cache and
+        // hope the array is re-retrieved.
 
-    Ember.assert('Computed reduce values require at least one dependent key', _cp._dependentArrays);
-    if (!_cp._hasInstanceMeta(this, propertyName)) {
-      // When we recompute an array computed property, we need already
-      // retrieved arrays to be updated; we can't simply empty the cache and
-      // hope the array is re-retrieved.
-
-      var recompute = function(_this, propertyName, cp){
-        return function(){
-          cp.recomputeOnce.call(_this, propertyName, cp);
+        var recompute = function (_this, propertyName, cp) {
+          return function () {
+            cp.recomputeOnce.call(_this, propertyName, cp);
+          };
         };
-      };
 
-      setup.call(this, propertyName, true, _cp);
-      forEach(_cp._dependentArrays, function(dependentKey) {
-        addObserver(this, dependentKey, recompute(this, propertyName, _cp));
-      }, this);
-      forEach(_cp._dependentKeys, function(dependentKey) {
-        addObserver(this, dependentKey, recompute(this, propertyName, _cp));
-      }, this);
-    }else{
-      if(_cp._instanceMeta(this, propertyName).shouldRecompute()){
-        reset.call(this, cp, propertyName);
-        addItems.call(this, propertyName, true, _cp);
+        setup.call(this, propertyName, true, _cp);
+        forEach(_cp._dependentArrays, function (dependentKey) {
+          addObserver(this, dependentKey, recompute(this, propertyName, _cp));
+        }, this);
+        forEach(_cp._dependentKeys, function (dependentKey) {
+          addObserver(this, dependentKey, recompute(this, propertyName, _cp));
+        }, this);
+      } else {
+        if (_cp._instanceMeta(this, propertyName).shouldRecompute()) {
+          reset.call(this, cp, propertyName);
+          addItems.call(this, propertyName, true, _cp);
+        }
       }
+      return _cp._instanceMeta(this, propertyName).getValue();
     }
-    return _cp._instanceMeta(this, propertyName).getValue();
   };
+  this._getter = _getter(this);
   //maintain backwards compatibility
   this.func = this._getter;
 }
@@ -209,19 +209,18 @@ ReduceComputedProperty.prototype._callbacks = function () {
 };
 
 ReduceComputedProperty.prototype._hasInstanceMeta = function (context, propertyName) {
-  var contextMeta = context.__ember_meta__;
-  var cacheMeta = contextMeta && contextMeta.cacheMeta;
+  var cacheMeta = this.instanceMeta[guidFor(context)];
   return !!(cacheMeta && cacheMeta[propertyName]);
 };
 
 ReduceComputedProperty.prototype._instanceMeta = function (context, propertyName) {
-  var contextMeta = context.__ember_meta__;
-  var cacheMeta = contextMeta.cacheMeta;
-  var meta = cacheMeta && cacheMeta[propertyName];
+  var cacheMeta = this.instanceMeta[guidFor(context)];
 
-  if (!cacheMeta) {
-    cacheMeta = contextMeta.cacheMeta = {};
+  if(!cacheMeta){
+    cacheMeta = this.instanceMeta[guidFor(context)] = {};
   }
+
+  var meta = cacheMeta[propertyName];
 
   if (!meta) {
     meta = cacheMeta[propertyName] = new ReduceComputedPropertyInstanceMeta(context, propertyName);
