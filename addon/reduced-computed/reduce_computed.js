@@ -71,7 +71,7 @@ function partiallyRecomputeFor(obj, dependentKey) {
 export { ReduceComputedProperty }; // TODO: default export
 
 function ReduceComputedProperty(options) {
-  var cp = this;
+
 
   this.options = options;
   this._dependentArrays = null;
@@ -153,33 +153,35 @@ function ReduceComputedProperty(options) {
     addItems.call(this, propertyName, firstSetup, cp)
   };
 
+  var _cp = this;
   this._getter = function (propertyName) {
-    Ember.assert('Computed reduce values require at least one dependent key', cp._dependentArrays);
-    if (!cp._hasInstanceMeta(this, propertyName)) {
+
+    Ember.assert('Computed reduce values require at least one dependent key', _cp._dependentArrays);
+    if (!_cp._hasInstanceMeta(this, propertyName)) {
       // When we recompute an array computed property, we need already
       // retrieved arrays to be updated; we can't simply empty the cache and
       // hope the array is re-retrieved.
 
-      var recompute = function(_this, propertyName, _cp){
+      var recompute = function(_this, propertyName, cp){
         return function(){
-          cp.recomputeOnce.call(_this, propertyName, _cp);
+          cp.recomputeOnce.call(_this, propertyName, cp);
         };
       };
 
-      setup.call(this, propertyName, true, cp);
-      forEach(cp._dependentArrays, function(dependentKey) {
-        addObserver(this, dependentKey, recompute(this, propertyName, cp));
+      setup.call(this, propertyName, true, _cp);
+      forEach(_cp._dependentArrays, function(dependentKey) {
+        addObserver(this, dependentKey, recompute(this, propertyName, _cp));
       }, this);
-      forEach(cp._dependentKeys, function(dependentKey) {
-        addObserver(this, dependentKey, recompute(this, propertyName, cp));
+      forEach(_cp._dependentKeys, function(dependentKey) {
+        addObserver(this, dependentKey, recompute(this, propertyName, _cp));
       }, this);
     }else{
-      if(cp._instanceMeta(this, propertyName).shouldRecompute()){
+      if(_cp._instanceMeta(this, propertyName).shouldRecompute()){
         reset.call(this, cp, propertyName);
-        addItems.call(this, propertyName, true, cp);
+        addItems.call(this, propertyName, true, _cp);
       }
     }
-    return cp._instanceMeta(this, propertyName).getValue();
+    return _cp._instanceMeta(this, propertyName).getValue();
   };
   //maintain backwards compatibility
   this.func = this._getter;
