@@ -82,7 +82,7 @@ function ReduceComputedProperty(options) {
 
   this.instanceMeta = {};
 
-  //this.readOnly();
+  this.readOnly();
 
   this.recomputeOnce = function(propertyName, cp) {
     run.once(this, setup, propertyName, false, cp);
