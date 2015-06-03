@@ -36,7 +36,7 @@ function get(obj, key) {
 function reset(cp, propertyName) {
   var meta = cp._instanceMeta(this, propertyName);
   meta.forceFlush();
-  meta.setValue(
+  meta.setInitialValue(
     cp.initialValue(this, meta)
   );
   if (cp.options.initialize) {
@@ -175,7 +175,7 @@ function ReduceComputedProperty(options) {
         }, this);
       } else {
         if (_cp._instanceMeta(this, propertyName).shouldRecompute()) {
-          reset.call(this, cp, propertyName);
+          reset.call(this, _cp, propertyName);
           addItems.call(this, propertyName, true, _cp);
         }
       }

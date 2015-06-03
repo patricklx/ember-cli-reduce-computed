@@ -9,7 +9,6 @@ function ReduceComputedPropertyInstanceMeta(context, propertyName) {
   this.propertyName = propertyName;
   this.dependentArrays = {};
   this.sugarMeta = {};
-  this.initialValue = undefined;
   this.value = undefined;
   this.valueChanged = false;
   this.update = null;
@@ -45,22 +44,23 @@ ReduceComputedPropertyInstanceMeta.prototype = {
 
     this.forceFlush();
 
-    var value = this.value;
-
-    if (value !== undefined) {
-      return value;
-    } else {
-      return this.initialValue;
-    }
+    return this.value;
   },
 
   setValue: function(newValue) {
-    // This lets sugars force a recomputation, handy for very simple
-    // implementations of eg max.
-    if (newValue === this.value) {
+
+    if (newValue === this.value || this.value === undefined) {
       return;
     }
 
+    this.value = newValue;
+    this.valueChanged = true;
+  },
+
+  setInitialValue: function(newValue){
+    if (newValue === this.value){
+      return;
+    }
     this.value = newValue;
     this.valueChanged = true;
   }
