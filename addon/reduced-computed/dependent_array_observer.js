@@ -249,7 +249,7 @@ DependentArraysObserver.prototype = {
     dependentKey = this.dependentKeysByGuid[guid];
     observerContexts = this.observersContextByGuid[guid];
     observerContextsToAdd = [];
-    itemPropertyKeys = this.cp._itemPropertyKeys[dependentKey];
+    itemPropertyKeys = this.cp._itemPropertyKeys[dependentKey] || [];
     changeMeta = {};
     len = get(dependentArray, 'length');
     if(index > len){
@@ -272,7 +272,7 @@ DependentArraysObserver.prototype = {
     for (itemIndex = index; itemIndex < maxIndex; itemIndex++) {
 
       item = dependentArray.objectAt(itemIndex);
-      if (itemPropertyKeys) {
+      if (itemPropertyKeys.length) {
         observerContext = this.createPropertyObserverContext(dependentArray, itemIndex);
         observerContextsToAdd.push(observerContext);
         updatePropertyKeys();
@@ -281,7 +281,7 @@ DependentArraysObserver.prototype = {
       this.setValue(addedItem.call(
         this.instanceMeta.context, this.getValue(), item, changeMeta, this.instanceMeta.sugarMeta));
     }
-    if( observerContextsToAdd.length && this.needIndex){
+    if(observerContexts && observerContextsToAdd.length && this.needIndex){
       Array.prototype.splice.apply(observerContexts, [index, 0].concat(observerContextsToAdd));
       if (this.observersReIndexByGuid[guid] === undefined || maxIndex < this.observersReIndexByGuid[guid]) {
         this.observersReIndexByGuid[guid] = maxIndex;
