@@ -151,6 +151,7 @@ DependentArraysObserver.prototype = {
 
       if (this.observersContextByGuid[guidFor(dependentArray)]) {
         delete this.observersContextByGuid[guidFor(dependentArray)];
+        delete this.observersReIndexByGuid[guidFor(dependentArray)]
       }
 
 
@@ -318,6 +319,7 @@ DependentArraysObserver.prototype = {
         observerContexts[itemIndex].index = itemIndex;
       }
       delete this.observersReIndexByGuid[guid];
+      delete this.observersContextByGuid[guid];
     }
   },
 
