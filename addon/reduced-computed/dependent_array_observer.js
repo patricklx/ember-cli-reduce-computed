@@ -151,7 +151,7 @@ DependentArraysObserver.prototype = {
 
       if (this.observersContextByGuid[guidFor(dependentArray)]) {
         delete this.observersContextByGuid[guidFor(dependentArray)];
-        delete this.observersReIndexByGuid[guidFor(dependentArray)]
+        delete this.observersReIndexByGuid[guidFor(dependentArray)];
       }
 
 
@@ -231,7 +231,10 @@ DependentArraysObserver.prototype = {
       this.setValue(removedItem.call(
         this.instanceMeta.context, this.getValue(), item, changeMeta, this.instanceMeta.sugarMeta));
     }
-
+    //check again
+    if(itemPropertyKeys.length){
+      observerContexts = this.observersContextByGuid[guid];
+    }
     if (observerContexts && this.needIndex && index <= observerContexts.length-1) {
       observerContexts.splice(index, removedCount);
       if (this.observersReIndexByGuid[guid] === undefined || index < this.observersReIndexByGuid[guid]) {
@@ -281,6 +284,7 @@ DependentArraysObserver.prototype = {
       this.setValue(addedItem.call(
         this.instanceMeta.context, this.getValue(), item, changeMeta, this.instanceMeta.sugarMeta));
     }
+    observerContexts = this.observersContextByGuid[guid];
     if(observerContexts && observerContextsToAdd.length && this.needIndex){
       Array.prototype.splice.apply(observerContexts, [index, 0].concat(observerContextsToAdd));
       if (this.observersReIndexByGuid[guid] === undefined || maxIndex < this.observersReIndexByGuid[guid]) {
