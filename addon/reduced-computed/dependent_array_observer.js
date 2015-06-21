@@ -323,7 +323,6 @@ DependentArraysObserver.prototype = {
         observerContexts[itemIndex].index = itemIndex;
       }
       delete this.observersReIndexByGuid[guid];
-      delete this.observersContextByGuid[guid];
     }
   },
 
