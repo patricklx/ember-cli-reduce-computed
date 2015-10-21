@@ -1,6 +1,6 @@
 import Ember from 'ember';
 var map, get, getWithDefault, set, metaFor, run, observer, keys, EmberObject, ComputedProperty, computed, guidFor, ArrayProxy, SubArray;
-map = Ember.EnumerableUtils.map;
+map = Array.prototype.map || Ember.EnumerableUtils.map;
 get = Ember.get;
 getWithDefault = Ember.getWithDefault;
 set = Ember.set;
