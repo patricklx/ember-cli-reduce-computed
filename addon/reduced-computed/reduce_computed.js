@@ -12,7 +12,7 @@ var addObserver = Ember.addObserver;
 var ComputedProperty = Ember.ComputedProperty;
 
 var o_create = Ember.create;
-var forEach = Array.prototype.forEach || Ember.EnumerableUtils.forEach;
+var forEach = Array.prototype.forEach.call || Ember.EnumerableUtils.forEach;
 var EmberArray = Ember.Array;
 var run = Ember.run;
 var isArray = Ember.isArray;
