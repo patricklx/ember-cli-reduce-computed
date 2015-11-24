@@ -3,7 +3,9 @@ var get = Ember.get;
 var guidFor = Ember.guidFor;
 var addObserver = Ember.addObserver;
 var removeObserver = Ember.removeObserver;
-var forEach = Array.prototype.forEach.call || Ember.EnumerableUtils.forEach;
+var forEach = Ember.EnumerableUtils.forEach || function () {
+    return Array.prototype.forEach.call(arguments);
+};
 var run = Ember.run;
 var cacheFor = Ember.cacheFor;
 var cacheRemove = cacheFor.remove;

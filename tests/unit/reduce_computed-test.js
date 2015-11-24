@@ -1,6 +1,8 @@
 import Ember from 'ember';
 var map, get, getWithDefault, set, metaFor, run, observer, keys, EmberObject, ComputedProperty, computed, guidFor, ArrayProxy, SubArray;
-map = Array.prototype.map || Ember.EnumerableUtils.map;
+map = Ember.EnumerableUtils.map || function () {
+  return Array.prototype.map.call(arguments);
+};
 get = Ember.get;
 getWithDefault = Ember.getWithDefault;
 set = Ember.set;
@@ -837,6 +839,7 @@ test("when initialValue is undefined, everything works as advertised", function(
       }
     })
   });
+
   equal(get(chars, 'firstUpper'), undefined, "initialValue is undefined");
 
   get(chars, 'letters').pushObjects(['a', 'b', 'c']);
