@@ -12,8 +12,8 @@ var addObserver = Ember.addObserver;
 var ComputedProperty = Ember.ComputedProperty;
 
 var o_create = Ember.create;
-var forEach = Ember.EnumerableUtils.forEach || function () {
-    return Array.prototype.forEach.call(arguments);
+var forEach = Ember.EnumerableUtils.forEach || function (obj, callback, thisArg) {
+    return obj.forEach ? obj.forEach(callback, thisArg) : Array.prototype.forEach.call(obj, callback, thisArg);
   };
 var EmberArray = Ember.Array;
 var run = Ember.run;
