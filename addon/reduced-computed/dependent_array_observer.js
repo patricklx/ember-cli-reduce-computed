@@ -34,7 +34,7 @@ function ChangeMeta(dependentArray, item, index, propertyName, property, changed
 
  @class DependentArraysObserver
  */
-function DependentArraysObserver(callbacks, cp, instanceMeta, context, propertyName, sugarMeta) {
+function DependentArraysObserver(callbacks, cp, instanceMeta, context, propertyName) {
   // user specified callbacks for `addedItem` and `removedItem`
   this.callbacks = callbacks;
 
@@ -77,13 +77,13 @@ DependentArraysObserver.prototype = {
     forEach(dependentArray, function (item, index) {
       ChangeMeta.call(changeMeta, dependentArray, item, index, propertyName, cp, dependentArray.length);
       meta.setValue( callbacks.addedItem.call(
-        this, meta.getValue(), item, changeMeta, meta.sugarMeta));
+        this, meta.getValue(), item, changeMeta, meta.sugarMeta), true);
     }, this);
     callbacks.flushedChanges.call(this, meta.getValue(), meta.sugarMeta);
   },
 
   setValue: function (newValue) {
-    this.instanceMeta.setValue(newValue, true);
+    this.instanceMeta.setValue(newValue);
   },
 
   getValue: function () {
@@ -128,7 +128,9 @@ DependentArraysObserver.prototype = {
   },
 
   setupPropertyObservers: function (dependentArray, itemPropertyKeys) {
-      if(!dependentArray) return;
+      if(!dependentArray){
+        return;
+      }
       var length = get(dependentArray, 'length');
       var observerContexts;
 
@@ -184,7 +186,7 @@ DependentArraysObserver.prototype = {
     };
   },
 
-  dependentArrayWillChange: function (dependentArray, index, removedCount, addedCount) {
+  dependentArrayWillChange: function (dependentArray, index, removedCount) {
     if (this.suspended) { return; }
 
     var dependentKey, observerContexts, itemPropertyKeys, changeMeta, maxIndex, len, guid, removedItem, itemIndex, item;
@@ -301,7 +303,9 @@ DependentArraysObserver.prototype = {
   },
 
   itemPropertyDidChange: function (obj, keyName, array, observerContext) {
-    if (observerContext.deleted) return;
+    if (observerContext.deleted) {
+      return;
+    }
     var guid = guidFor(obj);
     cacheRemove(this.cache, this.propertyName);
     if (!this.changedItems[guid]) {

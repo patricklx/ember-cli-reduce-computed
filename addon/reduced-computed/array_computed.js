@@ -25,7 +25,7 @@ ArrayComputedProperty.prototype.initialValue = function (context, meta) {
 };
 
 // This is a stopgap to keep the reference counts correct with lazy CPs.
-ArrayComputedProperty.prototype.didChange = function (obj, keyName) {
+ArrayComputedProperty.prototype.didChange = function () {
   return;
 };
 
