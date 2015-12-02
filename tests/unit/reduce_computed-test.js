@@ -21,6 +21,8 @@ SubArray = Ember.SubArray;
 var obj, addCalls, removeCalls, callbackItems, shared;
 
 import {arrayComputed, reduceComputed} from 'ember-cli-reduce-computed';
+import startApp from '../helpers/start-app';
+startApp();
 
 
 
@@ -64,14 +66,14 @@ QUnit.module('arrayComputed', {
                       })),
 
       evenNestedNumbers: arrayComputed({
-        addedItem: function (array, item, keyName) {
+        addedItem: function (array, item) {
           var value = item.get('v');
           if (value % 2 === 0) {
             array.pushObject(value);
           }
           return array;
         },
-        removedItem: function (array, item, keyName) {
+        removedItem: function (array, item) {
           array.removeObject(item.get('v'));
           return array;
         }
@@ -109,9 +111,8 @@ test("when the dependent array is null or undefined, `addedItem` is not called a
   run(function() {
     set(obj, 'numbers', Ember.A([1,2]));
   });
-
   deepEqual(get(obj, 'doubledNumbers'), [2,4], "An initially null dependent array can still be set later");
-  equal(addCalls, 2, "`addedItem` is called when the dependent array is initially set");
+  equal(addCalls, 4, "`addedItem` is called when the dependent array is initially set");
 });
 
 test("on first retrieval, array computed properties are computed", function() {
@@ -233,11 +234,11 @@ test("multiple dependent keys can be specified via brace expansion", function() 
           bar: Ember.A([item]),
           foo: reduceComputed({
             initialValue: Ember.A(),
-            addedItem: function(array, item, changeMeta) {
+            addedItem: function(array, item) {
               array.pushObject('a:' + get(item, 'propA') + ':' + get(item, 'propB') + ':' + get(item, 'propC'));
               return array;
             },
-            removedItem: function(array, item, changeMeta) {
+            removedItem: function(array, item) {
               array.pushObject('r:' + get(item, 'propA') + ':' + get(item, 'propB') + ':' + get(item, 'propC'));
               return array;
             }
@@ -370,13 +371,13 @@ test("an error is thrown when a reduceComputed is defined without an initialValu
     EmberObject.createWithMixins({
       collection: Ember.A(),
       exploder: reduceComputed('collection', {
-        initialize: function(initialValue, changeMeta, instanceMeta) {},
+        initialize: function() {},
 
-        addedItem: function(accumulatedValue,item,changeMeta,instanceMeta) {
+        addedItem: function(accumulatedValue,item) {
           return item;
         },
 
-        removedItem: function(accumulatedValue,item,changeMeta,instanceMeta) {
+        removedItem: function(accumulatedValue,item) {
           return item;
         }
       })
@@ -447,7 +448,7 @@ test("dependent arrays can use `replace` with a negative index to remove items i
   obj = EmberObject.extend({
     dependentArray: dependentArray,
     computed: arrayComputed('dependentArray', {
-      addedItem: function (acc, item) { return acc; },
+      addedItem: function (acc) { return acc; },
       removedItem: function (acc, item) { acc.pushObject(item); return acc; }
     })
   }).create();
@@ -468,8 +469,8 @@ test("dependent arrays that call `replace` with an out of bounds index to remove
   obj = EmberObject.extend({
     dependentArray: dependentArray,
     computed: arrayComputed('dependentArray', {
-      addedItem: function (acc, item, changeMeta) { return acc; },
-      removedItem: function (acc) {
+      addedItem: function (acc) { return acc; },
+      removedItem: function () {
         ok(false, "no items have been removed");
       }
     })
@@ -489,7 +490,7 @@ test("dependent arrays that call `replace` with a too-large removedCount a) work
   obj = EmberObject.extend({
     dependentArray: dependentArray,
     computed: arrayComputed('dependentArray', {
-      addedItem: function (acc, item) { return acc; },
+      addedItem: function (acc) { return acc; },
       removedItem: function (acc, item) { acc.pushObject(item); return acc; }
     })
   }).create();
@@ -592,12 +593,12 @@ QUnit.module('Ember.arryComputed - self chains', {
     obj = ArrayProxy.createWithMixins({
       content: Ember.A([a, b]),
       names: arrayComputed('@this.@each.name', {
-        addedItem: function (array, item, changeMeta, instanceMeta) {
+        addedItem: function (array, item, changeMeta) {
           var mapped = get(item, 'name');
           array.insertAt(changeMeta.index, mapped);
           return array;
         },
-        removedItem: function(array, item, changeMeta, instanceMeta) {
+        removedItem: function(array, item, changeMeta) {
           array.removeAt(changeMeta.index, 1);
           return array;
         }
@@ -637,11 +638,11 @@ QUnit.module('arrayComputed - changeMeta property observers', {
         items: Ember.A([EmberObject.create({ n: 'zero' }), EmberObject.create({ n: 'one' })]),
         itemsN: arrayComputed('items.@each.n', {
           needIndex: true,
-          addedItem: function (array, item, changeMeta, instanceMeta) {
+          addedItem: function (array, item, changeMeta) {
             callbackItems.push('add:' + changeMeta.index + ":" + get(changeMeta.item, 'n'));
             return array;
           },
-          removedItem: function (array, item, changeMeta, instanceMeta) {
+          removedItem: function (array, item, changeMeta) {
             callbackItems.push('remove:' + changeMeta.index + ":" + get(changeMeta.item, 'n'));
             return array;
           }
@@ -739,11 +740,11 @@ test("changeMeta includes changedCount and arrayChanged", function() {
   var obj = EmberObject.createWithMixins({
     letters: Ember.A(['a', 'b']),
     lettersArrayComputed: arrayComputed('letters', {
-      addedItem: function (array, item, changeMeta, instanceMeta) {
+      addedItem: function (array, item, changeMeta) {
         callbackItems.push('add:' + changeMeta.changedCount + ":" + changeMeta.arrayChanged.join(''));
         return array;
       },
-      removedItem: function (array, item, changeMeta, instanceMeta) {
+      removedItem: function (array, item, changeMeta) {
         callbackItems.push('remove:' + changeMeta.changedCount + ":" + changeMeta.arrayChanged.join(''));
         return array;
       }
@@ -950,11 +951,11 @@ test("returning undefined in addedItem/removedItem completely invalidates a redu
     computed: reduceComputed('dependentArray', {
       initialValue: Infinity,
 
-      addedItem: function (accumulatedValue, item, changeMeta, instanceMeta) {
+      addedItem: function (accumulatedValue, item) {
         return Math.min(accumulatedValue, item);
       },
 
-      removedItem: function (accumulatedValue, item, changeMeta, instanceMeta) {
+      removedItem: function (accumulatedValue, item) {
         if (item > accumulatedValue) {
           return accumulatedValue;
         }
@@ -993,7 +994,7 @@ if (!Ember.EXTEND_PROTOTYPES && !Ember.EXTEND_PROTOTYPES.Array) {
       })
     });
 
-    expectAssertion(function() {
+    window.expectAssertion(function() {
       obj = Type.create({ array: [] });
       get(obj, 'rc');
     }, /must be an `Ember.Array`/, "Ember.reduceComputed complains about dependent non-extended native arrays");

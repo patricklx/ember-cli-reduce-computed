@@ -4,7 +4,6 @@ import DependentArraysObserver from './dependent_array_observer';
 
 var e_get = Ember.get;
 var guidFor = Ember.guidFor;
-var metaFor = Ember.meta;
 var EmberError = Ember.Error;
 
 var expandProperties = Ember.expandProperties;
@@ -87,7 +86,7 @@ function ReduceComputedProperty(options) {
   this.readOnly();
 
   this.recomputeOnce = function(propertyName, cp) {
-    run.once(this, setup, propertyName, false, cp);
+    cp.recomputeTimer = run.once(this, setup, propertyName, false, cp);
   };
 
   var addItems = function (propertyName, firstSetup, cp) {
@@ -151,7 +150,7 @@ function ReduceComputedProperty(options) {
         }
       }, this);
     }, this);
-    addItems.call(this, propertyName, firstSetup, cp)
+    addItems.call(this, propertyName, firstSetup, cp);
   };
 
   var _getter = function (_cp) {
@@ -181,8 +180,18 @@ function ReduceComputedProperty(options) {
           addItems.call(this, propertyName, true, _cp);
         }
       }
+      if (_cp.recomputeTimer) {
+        Ember.run.cancel(_cp.recomputeTimer);
+        _cp.recomputeTimer = null;
+        reset.call(this, _cp, propertyName);
+        addItems.call(this, propertyName, true, _cp);
+      }
+      if (_cp._instanceMeta(this, propertyName).getValue() === undefined) {
+        reset.call(this, _cp, propertyName);
+        addItems.call(this, propertyName, true, _cp);
+      }
       return _cp._instanceMeta(this, propertyName).getValue();
-    }
+    };
   };
   this._getter = _getter(this);
   //maintain backwards compatibility
