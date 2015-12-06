@@ -969,19 +969,19 @@ test("returning undefined in addedItem/removedItem completely invalidates a redu
 
   get(obj, 'computed');
   equal(get(obj, 'computed'), 1);
-  equal(counter, 0);
+  equal(counter, 1);
 
   dependentArray.pushObject(10);
   equal(get(obj, 'computed'), 1);
-  equal(counter, 0);
+  equal(counter, 1);
 
   dependentArray.removeObject(10);
   equal(get(obj, 'computed'), 1);
-  equal(counter, 0);
+  equal(counter, 1);
 
   dependentArray.removeObject(1);
   equal(get(obj, 'computed'), 2);
-  equal(counter, 1);
+  equal(counter, 3);
 });
 
 if (!Ember.EXTEND_PROTOTYPES && !Ember.EXTEND_PROTOTYPES.Array) {
@@ -1054,3 +1054,5 @@ test("item property change flushes are gated by a semaphore", function() {
 
   deepEqual(callbackItems, ['remove:true', 'add:true', 'remove:true', 'add:true'], "item property flushes that depend on a shared prop are gated by a semaphore");
 });
+
+

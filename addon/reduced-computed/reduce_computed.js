@@ -86,10 +86,10 @@ function ReduceComputedProperty(options) {
   this.readOnly();
 
   this.recomputeOnce = function(propertyName, cp) {
-    cp.recomputeTimer = run.once(this, setup, propertyName, false, cp);
+    cp.recomputeTimer = run.once(this, setup, propertyName, cp);
   };
 
-  var addItems = function (propertyName, firstSetup, cp) {
+  var addItems = function (propertyName, cp) {
     var meta = cp._instanceMeta(this, propertyName);
     var callbacks = cp._callbacks();
     if(!cp.options.hasOwnInitialValue){
@@ -103,14 +103,12 @@ function ReduceComputedProperty(options) {
         }
       }, this);
     }
-    if(!firstSetup){
-      meta.dependentArraysObserver.notifyPropertyChangeIfRequired();
-    }else{
-      meta.dependentArraysObserver.instanceMeta.valueChanged = false;
-    }
+
+    meta.dependentArraysObserver.notifyPropertyChangeIfRequired();
+
   };
 
-  var setup = function (propertyName, firstSetup, cp) {
+  var setup = function (propertyName, cp) {
 
     var meta = cp._instanceMeta(this, propertyName);
 
@@ -150,7 +148,7 @@ function ReduceComputedProperty(options) {
         }
       }, this);
     }, this);
-    addItems.call(this, propertyName, firstSetup, cp);
+    addItems.call(this, propertyName, cp);
   };
 
   var _getter = function (_cp) {
@@ -167,7 +165,7 @@ function ReduceComputedProperty(options) {
           };
         };
 
-        setup.call(this, propertyName, true, _cp);
+        setup.call(this, propertyName, _cp);
         forEach(_cp._dependentArrays, function (dependentKey) {
           addObserver(this, dependentKey, recompute(this, propertyName, _cp));
         }, this);
@@ -176,19 +174,16 @@ function ReduceComputedProperty(options) {
         }, this);
       } else {
         if (_cp._instanceMeta(this, propertyName).shouldRecompute()) {
-          reset.call(this, _cp, propertyName);
-          addItems.call(this, propertyName, true, _cp);
+          setup.call(this, propertyName, _cp);
         }
       }
       if (_cp.recomputeTimer) {
         Ember.run.cancel(_cp.recomputeTimer);
         _cp.recomputeTimer = null;
-        reset.call(this, _cp, propertyName);
-        addItems.call(this, propertyName, true, _cp);
+        setup.call(this, propertyName, _cp);
       }
       if (_cp._instanceMeta(this, propertyName).getValue() === undefined) {
-        reset.call(this, _cp, propertyName);
-        addItems.call(this, propertyName, true, _cp);
+        setup.call(this, propertyName, _cp);
       }
       return _cp._instanceMeta(this, propertyName).getValue();
     };
