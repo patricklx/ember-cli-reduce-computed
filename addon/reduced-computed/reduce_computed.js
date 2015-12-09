@@ -153,6 +153,7 @@ function ReduceComputedProperty(options) {
 
   var _getter = function (_cp) {
     return function (propertyName) {
+      var runSetup = false;
       Ember.assert('Computed reduce values require at least one dependent key', _cp._dependentArrays);
       if (!_cp._hasInstanceMeta(this, propertyName)) {
         // When we recompute an array computed property, we need already
@@ -172,17 +173,16 @@ function ReduceComputedProperty(options) {
         forEach(_cp._dependentKeys, function (dependentKey) {
           addObserver(this, dependentKey, recompute(this, propertyName, _cp));
         }, this);
-      } else {
-        if (_cp._instanceMeta(this, propertyName).shouldRecompute()) {
-          setup.call(this, propertyName, _cp);
-        }
-      }
-      if (_cp.recomputeTimer) {
+      } else if (_cp._instanceMeta(this, propertyName).shouldRecompute()) {
+        runSetup = true;
+      } else if (_cp.recomputeTimer) {
         Ember.run.cancel(_cp.recomputeTimer);
         _cp.recomputeTimer = null;
-        setup.call(this, propertyName, _cp);
+        runSetup = true;
+      } else if (_cp._instanceMeta(this, propertyName).getValue() === undefined) {
+        runSetup = true;
       }
-      if (_cp._instanceMeta(this, propertyName).getValue() === undefined) {
+      if (runSetup) {
         setup.call(this, propertyName, _cp);
       }
       return _cp._instanceMeta(this, propertyName).getValue();

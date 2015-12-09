@@ -54,7 +54,9 @@ ReduceComputedPropertyInstanceMeta.prototype = {
     }
 
     this.value = newValue;
-    this.valueChanged = true;
+    if (newValue !== undefined) {
+      this.valueChanged = true;
+    }
   },
 
   setInitialValue: function(newValue){

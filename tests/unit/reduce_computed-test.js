@@ -981,7 +981,7 @@ test("returning undefined in addedItem/removedItem completely invalidates a redu
 
   dependentArray.removeObject(1);
   equal(get(obj, 'computed'), 2);
-  equal(counter, 3);
+  equal(counter, 2);
 });
 
 if (!Ember.EXTEND_PROTOTYPES && !Ember.EXTEND_PROTOTYPES.Array) {
